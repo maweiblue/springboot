@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ConcurrentReferenceHashMap<K,V> extends AbstractMap<K,V> implements ConcurrentMap<K,V> {
+public abstract class ConcurrentReferenceHashMap<K,V> extends AbstractMap<K,V> implements ConcurrentMap<K,V> {
     private static final int DEFAULT_INITIAL_CAPACITY=16;
     private static final float DEFAULT_LOAD_FACTOR=0.75f;
     private static final int DEFAULT_CONCURRENCY_LEVEL=16;

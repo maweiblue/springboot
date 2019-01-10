@@ -2,11 +2,10 @@ package org.springframework.core.type.classreading;
 
 import com.sun.org.apache.xpath.internal.compiler.OpCodes;
 import jdk.nashorn.internal.runtime.regexp.joni.constants.OPCode;
-import org.springframework.core.asm.ClassVisitor;
-import org.springframework.core.asm.Opcodes;
-import org.springframework.core.asm.SpringAsmInfo;
+import org.springframework.core.asm.*;
 import org.springframework.core.type.ClassMetadata;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -42,69 +41,146 @@ public class ClassMetadataReadingVisitor extends ClassVisitor implements ClassMe
             this.interfaces[i] = ClassUtils.convertResourcePathToClassName(interfaces[i]);
         }
     }
+    @Override
+    public void visitOuterClass(String owner, String name, String desc) {
+        this.enclosingClassName = ClassUtils.convertResourcePathToClassName(owner);
+    }
+    @Override
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (outerName != null) {
+            String fqName = ClassUtils.convertResourcePathToClassName(name);
+            String fqOuterName = ClassUtils.convertResourcePathToClassName(outerName);
+            if (this.className.equals(fqName)) {
+                this.enclosingClassName = fqOuterName;
+                this.independentInnerClass = ((access & Opcodes.ACC_STATIC) != 0);
+            }
+            else if (this.className.equals(fqOuterName)) {
+                this.memberClassNames.add(fqName);
+            }
+        }
+    }
+
+    @Override
+    public void visitSource(String source, String debug) {
+
+    }
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        // no-op
+        return new EmptyAnnotationVisitor();
+    }
+    @Override
+    public void visitAttribute(Attribute attr) {
+        // no-op
+    }
+    @Override
+    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        // no-op
+        return new EmptyFieldVisitor();
+    }
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+        // no-op
+        return new EmptyMethodVisitor();
+    }
+    @Override
+    public void visitEnd() {
+        // no-op
+    }
 
     @Override
     public String getClassName() {
-        return null;
+        return this.className;
     }
 
     @Override
     public boolean isInterface() {
-        return false;
+        return this.isInterface;
     }
 
     @Override
     public boolean isAnnotation() {
-        return false;
+        return this.isAnnotation;
     }
 
     @Override
     public boolean isAbstract() {
-        return false;
+        return this.isAbstract;
     }
 
     @Override
     public boolean isConcrete() {
-        return false;
+        return !(this.isInterface||this.isAbstract);
     }
 
     @Override
     public boolean isFinal() {
-        return false;
+        return this.isFinal;
     }
 
     @Override
     public boolean isIndependent() {
-        return false;
+        return (this.enclosingClassName==null||this.independentInnerClass);
     }
 
     @Override
     public boolean hasEnclosingClass() {
-        return false;
+        return (this.enclosingClassName!=null);
     }
 
     @Override
     public String getEnclosingClassName() {
-        return null;
+        return this.enclosingClassName;
     }
 
     @Override
     public boolean hasSuperClass() {
-        return false;
+        return (this.superClassName!=null);
     }
 
     @Override
     public String getSuperClassName() {
-        return null;
+        return this.superClassName;
     }
 
     @Override
     public String[] getInterfaceNames() {
-        return new String[0];
+        return this.interfaces;
     }
 
     @Override
     public String[] getMemberClassNames() {
-        return new String[0];
+        return StringUtils.toStringArray(this.memberClassNames);
+    }
+
+    private static class EmptyAnnotationVisitor extends AnnotationVisitor {
+
+        public EmptyAnnotationVisitor() {
+            super(SpringAsmInfo.ASM_VERSION);
+        }
+
+        @Override
+        public AnnotationVisitor visitAnnotation(String name, String desc) {
+            return this;
+        }
+
+        @Override
+        public AnnotationVisitor visitArray(String name) {
+            return this;
+        }
+    }
+
+    private static class EmptyMethodVisitor extends MethodVisitor {
+
+        public EmptyMethodVisitor() {
+            super(SpringAsmInfo.ASM_VERSION);
+        }
+    }
+
+    private static class EmptyFieldVisitor extends FieldVisitor {
+
+        public EmptyFieldVisitor() {
+            super(SpringAsmInfo.ASM_VERSION);
+        }
     }
 }
