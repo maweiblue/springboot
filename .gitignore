@@ -1,3 +1,4 @@
 /.idea/**
 fakeboot.iml
 /src/main/java/org/springframework/test
+/target/**
